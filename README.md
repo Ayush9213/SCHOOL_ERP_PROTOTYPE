@@ -4,7 +4,7 @@
 - This system streamlines school administration, offering portals for teachers 👨‍🏫, students 🎓, and parents 🤱.
 - THIS IS A PROTO TYPE SOFTWARE MADE USING PYTHON AND MYSQL.
 
-Features include:
+### Features include:
 - 📚 **Teacher Portal**: Manage student records, marks, and attendance.
 - 🎒 **Student / Parent Portal**: Fee submission, result checking, and updates.
 - 💵 **Fee Management**: Class-based fee submission.
