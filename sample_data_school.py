@@ -9,7 +9,14 @@ mydb = mysql.connector.connect(
 
 my = mydb.cursor()
 
+my.execute("""
+      INSERT INTO teachers (login_id, password)
+      VALUES
+      ("teach123", "teach123"),
+      ("admin", "admin");
+ """)
 
+mydb.commit()
 
 my.execute("""
       INSERT INTO students (admission_number, class_group, actual_class, name, DOB, aadhar)
