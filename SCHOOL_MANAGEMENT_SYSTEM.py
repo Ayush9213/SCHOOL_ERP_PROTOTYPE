@@ -73,8 +73,7 @@ my.execute("""
 my.execute("""
     CREATE TABLE IF NOT EXISTS students (
     admission_number INT PRIMARY KEY,
-    class_group VARCHAR(255),
-    actual_class VARCHAR(255),
+    classe VARCHAR(255),
     name VARCHAR(255),
     DOB INT NOT NULL,
     aadhar INT NOT NULL
@@ -127,7 +126,7 @@ my.execute("""
 #FUCTION TO CLEAR SCREEN AND DELAY OF 1 SEC IN NEXT COMMAND
 def clear_screen():
     os.system('cls')
-    time.sleep(0.5)
+    time.sleep(1)
 
 #def FUNCTION TO ASK ABOUT USER TYPE
 def ask1():
@@ -162,11 +161,10 @@ def teacher():
     login_id = input("Enter your login ID: ")
     password = getpass.getpass("Enter your password: ")
 
-    # Check credentials against the database
     my.execute("SELECT * FROM teachers WHERE login_id = %s AND password = %s", (login_id, password))
     result = my.fetchone()
 
-    if result:
+    if result is not None:
         print("Login successful!")
         print()
         print("***********************************************")
@@ -190,53 +188,143 @@ def teacher():
         print("Invalid login credentials. Access denied.")
 
 #def FUNCTION TO TAKE FEE INPUT
-def fee():
+def fee(): 
+        clear_screen()
+        print("ENTER YOUR ADMISSION NUMBER TO SUBMIT THE FEE\nAFTER ENTERING ADMISSION NUMBER YOUR FEE WILL BE DEDUCTED FROM THE REGISTERED ACCOUNT.")
+        print()
         admission_number = int(input("ENTER YOUR ADMISSION NUMBER:--"))
+        clear_screen()
 
-        # Retrieve student details based on the admission number
-        my.execute("SELECT name, class_group FROM students WHERE admission_number = %s", (admission_number,))
+        my.execute("SELECT name, classe FROM students WHERE admission_number = %s", (admission_number,))
         student_details = my.fetchone()
 
         if student_details is None:
             print("No student found with the given admission number.")
             return
 
-        name, class_group = student_details
+        name, classe = student_details
+        print("***********************************")
+        print("**          FEE RECEIPT          **")
+        print("***********************************")
         print(f"Student Name: {name}")
-        print(f"Class group: {class_group}")
+        print(f"Class: {classe}")
 
-        if class_group == '1':
-            fee_amount = 12000
-            print("YOUR QUARTERLY FEE IS ₹12000")
-        elif class_group == '2':
-            fee_amount = 15000
-            print("YOUR QUARTERLY FEE IS ₹15000")
-        elif class_group == '3':
-            fee_amount = 18000
-            print("YOUR QUARTERLY FEE IS ₹18000")
+        classe = int(classe)
+
+        if classe in [1, 2, 3, 4, 5, 6, 7, 8]:
+           fee = 12000
+        elif classe in [9, 10]:
+           fee = 15000
+        elif classe in [11, 12]:
+           fee = 18000
         else:
-            print("Class information not recognized, please check with the administration.")
-            return
+           print("Class information not recognized, please check with the administration.")
+           return
 
-        # Check if the fee has already been submitted
         my.execute("SELECT fee FROM fee WHERE admission_number = %s", (admission_number,))
         fee_record = my.fetchone()
 
         if fee_record is not None:
+            print(f"Your fee is : {fee} for a quarter.")
             print("FEE IS SUBMITTED ALREADY")
+            print("***********************************")
         else:
-            # Inserting the fee information
+            print(f"Your fee is : {fee} for a quarter.")
             my.execute(
                 "INSERT INTO fee (admission_number, fee) VALUES (%s, %s)",
-                (admission_number, fee_amount)
+                (admission_number, fee)
             )
             mydb.commit()
             print("FEE SUBMITTED SUCCESSFULLY")
-
+            print("***********************************")
+  
 #def FUNCTION TO REGISTER MARKS OF STUDENT
 def enter_marks():
     adms = int(input("ENTER STUDENT'S ADMISSION NUMBER:--"))
     print()
+    my.execute("SELECT name, classe FROM students WHERE admission_number = %s", (adms,))
+    STU_REC = my.fetchone()
+    name, classe = STU_REC
+    print("***********************************")
+    print("**      REPORT CARD MAKING       **")
+    print("***********************************")
+    print(f"Student Name: {name}")
+    print(f"Class: {classe}")
+    print("***********************************") 
+    print()
+
+    my.execute("SELECT * FROM marks WHERE admission_number=%s", (adms,))
+    existing_record = my.fetchone()
+    if existing_record is not None:
+        print("Marks are already registered for this student.")
+        choice = input("Do you want to update the existing record? (yes/no):--").lower()
+        if choice == "yes":
+            marks_update(adms)
+        elif choice == "no":
+            print("EXITING...")
+        else:
+            print("INVALID CHOICE ENTERED, EXITING...")
+    else:
+        marks_enter(adms)
+    take = int(input("WANT TO REGISTER MORE MARKS (1-YES / 2-NO):--"))
+    if take == 1:
+        clear_screen()
+        enter_marks()
+    else:
+        print("WORK IS DONE, EXITING...")
+
+        
+#def FUNCTION TO UPDATE MARKS OF THE STUDENT        
+def marks_enter(adms):
+    print("ENTER SUBJECT NAME AND MARKS.")
+    print()
+    sub1 = input("ENTER SUBJECT-1 NAME:--")
+    mark1 = int(input("ENTER MARKS OBTAINED:--"))
+    print()
+    sub2 = input("ENTER SUBJECT-2 NAME:--")
+    mark2 = int(input("ENTER MARKS OBTAINED:--"))
+    print()
+    sub3 = input("ENTER SUBJECT-3 NAME:--")
+    mark3 = int(input("ENTER MARKS OBTAINED:--"))
+    print()
+    sub4 = input("ENTER SUBJECT-4 NAME:--")
+    mark4 = int(input("ENTER MARKS OBTAINED:--"))
+    print()
+    sub5 = input("ENTER SUBJECT-5 NAME:--")
+    mark5 = int(input("ENTER MARKS OBTAINED:--"))
+    print()
+    total_marks = mark1 + mark2 + mark3 + mark4 + mark5
+    percentage = total_marks / 5
+    grace = "Yes" if percentage < 40 else "No"
+
+    if percentage >= 90:
+        remarks = "Excellent"
+    elif percentage >= 80:
+        remarks = "Very Good"
+    elif percentage >= 70:
+        remarks = "Good"
+    elif percentage >= 60:
+        remarks = "Satisfactory"
+    elif percentage >= 50:
+        remarks = "Fair"
+    else:
+        remarks = "Needs Improvement"
+    
+    query = """
+        INSERT INTO marks (admission_number, sub1, mark1, sub2, mark2, sub3, mark3,
+          sub4, mark4, sub5, mark5, total_marks, grace, percentage, remarks) 
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+    """
+    values = (adms, sub1, mark1, sub2, mark2, sub3, mark3, sub4, mark4, sub5, mark5,
+               total_marks, grace, percentage, remarks)
+    
+    my.execute(query, values)
+    mydb.commit()
+    print("MARKS REGISTERED SUCCESSFULLY")
+
+        
+#def FUNCTION TO ADD MARKS OF A STUDENT        
+def marks_update(adms):
     print("ENTER SUBJECT NAME AND MARKS.")
     print()
     sub1 = input("ENTER SUBJECT-1 NAME:--")
@@ -258,7 +346,6 @@ def enter_marks():
     percentage = total_marks / 5
     grace = "Yes" if percentage < 40 else "No"
     
-    # Adding remarks based on percentage
     if percentage >= 90:
         remarks = "Excellent"
     elif percentage >= 80:
@@ -271,40 +358,31 @@ def enter_marks():
         remarks = "Fair"
     else:
         remarks = "Needs Improvement"
-
+            
     query = """
-        INSERT INTO marks (admission_number, sub1, mark1, sub2, mark2, sub3, mark3, sub4, mark4, sub5, mark5, total_marks, grace, percentage, remarks) 
-        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        UPDATE marks 
+        SET sub1=%s, mark1=%s, sub2=%s, mark2=%s, sub3=%s, mark3=%s, 
+            sub4=%s, mark4=%s, sub5=%s, mark5=%s, total_marks=%s, grace=%s, 
+            percentage=%s, remarks=%s 
+        WHERE admission_number = %s
     """
-    values = (adms, sub1, mark1, sub2, mark2, sub3, mark3, sub4, mark4, sub5, mark5, total_marks, grace, percentage, remarks)
+    values = (sub1, mark1, sub2, mark2, sub3, mark3, sub4, mark4, sub5, mark5, 
+              total_marks, grace, percentage, remarks, adms)
     
     my.execute(query, values)
     mydb.commit()
-    print("MARKS REGISTERED SUCCESSFULLY")
+    print("Marks record updated successfully.")
 
-    take = int(input("WANT TO REGISTER MORE MARKS (1-YES / 2-NO):--"))
-    if take == 1:
-        clear_screen()
-        enter_marks()
-    else:
-        print("WORK IS DONE, EXITING...")
 
+        
 #def FUNCTION TO TAKE NEW ADMISSION
 def new_admission():
-    print("IN WHICH CLASS WOULD YOU WANT TO TAKE THE ADMISSION:--")
-    print("1. PRE-PRIMARY")
-    print("2. CLASS 1-9")
-    print("3. CLASS 11 SCIENCE STREAM")
-    print("4. CLASS 11 COMMERCE STREAM")
-    print("5. CLASS 11 HUMANITIES STREAM")
-    cls = int(input("ENTER STUDENT'S CLASS CORRESPONDING NUMBER:--"))
-    cls2 = input("ENTER STUDENT'S ACTUAL CLASS:--")
+    cls = input("IN WHICH CLASS WOULD YOU WANT TO TAKE THE ADMISSION:--")
     name = input("ENTER STUDENT'S NAME:--")
     dob = int(input("ENTER STUDENT'S DATE OF BIRTH (only year) :--"))
-    mks = int(input("ENTER MARKS PERCENTAGE OF STUDENT'S PREVIOUS CLASS:--"))
     aadhar = int(input("ENTER STUDENT AADHAAR CARD NUMBER:--"))
 
-    # Generate a unique admission number
+
     my.execute("SELECT MAX(admission_number) FROM students")
     result = my.fetchone()
     if result[0] is None:
@@ -312,8 +390,8 @@ def new_admission():
     else:
         admission_number = result[0] + 1
 
-    my.execute("INSERT INTO students (admission_number, class_group, actual_class, name, DOB, aadhar) VALUES (%s, %s, %s, %s, %s, %s)",
-               (admission_number, cls, cls2, name, dob, aadhar))
+    my.execute("INSERT INTO students (admission_number, classe, name, DOB, aadhar) VALUES (%s, %s, %s, %s, %s)",
+               (admission_number, cls, name, dob, aadhar))
     mydb.commit()
     
     clear_screen()
@@ -324,26 +402,26 @@ def new_admission():
 #def FUNCTION FOR CHECKING STUDENT DETAILS
 def check_student_details():
     my.execute("SELECT * FROM students")
-    for (admission_number, class_group, actual_class, name, DOB, aadhar) in my:
-        print(f"Admission Number: {admission_number}, Class Group: {class_group}, Actual Class: {actual_class}, Name: {name}, DOB: {DOB}, Aadhar: {aadhar}")
+    for (admission_number, classe, name, DOB, aadhar) in my:
+        print(f"Admission Number: {admission_number}, Class: {classe}, Name: {name}, DOB: {DOB}, Aadhar: {aadhar}")
     input("Press Enter to continue...")
 
 #def FUNCTION TO REGISTER STUDENT ATTENDANCE
 def record_attendance():
     admission_number = int(input("Enter student's admission number: "))
     month = input("Enter month: ")
-    # Check if attendance record already exists for the given month and admission number
+
     my.execute("SELECT * FROM attendance WHERE admission_number=%s AND month=%s", (admission_number, month))
     existing_record = my.fetchone()
 
-    if existing_record:
+    if existing_record is not None:
         print("Attendance record already exists for this month.")
         choice = input("Do you want to update the existing record? (yes/no): ").lower()
         if choice == "yes":
             present_days = int(input("Enter number of present days: "))
             absent_days = int(input("Enter number of absent days: "))
             leave_days = int(input("Enter number of leave days: "))
-            # Update existing record
+
             my.execute("UPDATE attendance SET present_days=%s, absent_days=%s, leave_days=%s WHERE admission_number=%s AND month=%s",
                        (present_days, absent_days, leave_days, admission_number, month))
             mydb.commit()
@@ -351,7 +429,6 @@ def record_attendance():
         else:
             print("No changes made to the existing record.")
     else:
-        # Record new attendance
         present_days = int(input("Enter number of present days: "))
         absent_days = int(input("Enter number of absent days: "))
         leave_days = int(input("Enter number of leave days: "))
@@ -393,26 +470,26 @@ def existing():
 def see_result():
     clear_screen()
     admission_number = int(input("ENTER YOUR ADMISSION NUMBER:--"))
-
-    # Retrieve student details
-    my.execute("SELECT name, actual_class FROM students WHERE admission_number=%s", (admission_number,))
+    clear_screen()
+    my.execute("SELECT name, classe FROM students WHERE admission_number=%s", (admission_number,))
     student_details = my.fetchone()
 
-    # Retrieve marks
     my.execute("SELECT * FROM marks WHERE admission_number=%s", (admission_number,))
     result = my.fetchone()
 
-    if student_details and result:
-        name, actual_class = student_details
+    if student_details and result is not None:
+        name, classe = student_details
+        print("*****************************************************")
+        print("**                   REPORT CARD                   **")
         print("*****************************************************")
         print(f"* NAME: {name}")
-        print(f"* CLASS: {actual_class}")
+        print(f"* CLASS: {classe}")
         print("*****************************************************")
-        print(f"* SUBJECT 1: {result[1]}, MARKS: {result[2]}")
-        print(f"* SUBJECT 2: {result[3]}, MARKS: {result[4]}")
-        print(f"* SUBJECT 3: {result[5]}, MARKS: {result[6]}")
-        print(f"* SUBJECT 4: {result[7]}, MARKS: {result[8]}")
-        print(f"* SUBJECT 5: {result[9]}, MARKS: {result[10]}")
+        print(f"* SUBJECT 1: {result[1]},         MARKS: {result[2]}")
+        print(f"* SUBJECT 2: {result[3]},         MARKS: {result[4]}")
+        print(f"* SUBJECT 3: {result[5]},         MARKS: {result[6]}")
+        print(f"* SUBJECT 4: {result[7]},         MARKS: {result[8]}")
+        print(f"* SUBJECT 5: {result[9]},         MARKS: {result[10]}")
         print("*****************************************************")
         print(f"* TOTAL MARKS: {result[11]}")
         print(f"* GRACE: {result[12]}")
@@ -421,17 +498,24 @@ def see_result():
         print("*****************************************************")
     else:
         print("NO RESULT FOUND")
-        print("PROBABLY YOUR RESULT IS IN PROCESS.")
+        print()
+        print("PROBABLY YOUR RESULT IS IN PROGRESS.")
+        print()
+        print("DO NOT BE WORRY KEEP STUDING")
 
 
 #def FUNCTION TO UPDATE DETAILS
 def update_details():
+    clear_screen()
     admission_number = int(input("ENTER YOUR ADMISSION NUMBER:--"))
-    field = input("ENTER THE FIELD YOU WANT TO UPDATE (name/class_group/actual_class/DOB/aadhar):--")
+    print()
+    field = input("ENTER THE FIELD YOU WANT TO UPDATE (name/classe/DOB/aadhar):--")
+    print()
     new_value = input("ENTER THE NEW VALUE:--")
     my.execute(f"UPDATE students SET {field} = %s WHERE admission_number = %s", (new_value, admission_number))
     mydb.commit()
     print("DETAILS UPDATED SUCCESSFULLY")
+    print()
     more = int(input("WANT TO CHANGE MORE (1-yes / 2-no):"))
     if more == 1:
         update_details()
@@ -440,14 +524,19 @@ def update_details():
 
 #def FUNCTION TO CHECK DETAILS
 def check_attendance():
+    clear_screen()
+    print("ENTER YOUR ADMISSION NUMBER AND MONTH NAME OF WHICH YOU WANT TO SEE THE ATTENADANCE:--")
     admission_number = int(input("Enter your admission number: "))
     month = input("Enter month: ")
     my.execute("SELECT * FROM attendance WHERE admission_number=%s AND month=%s", (admission_number, month))
     result = my.fetchone()
     if result:
-        print("PRESENT DAYS:", result[2])
-        print("ABSENT DAYS:", result[3])
-        print("LEAVE DAYS:", result[4])
+        print()
+        print("*****************************")
+        print("*     PRESENT DAYS:", result[2])
+        print("*     ABSENT DAYS:", result[3])
+        print("*     LEAVE DAYS:", result[4])
+        print("*****************************")
     else:
         print("No attendance record found for the given month.")
     print()
